@@ -76,6 +76,11 @@ const PAGE_CSS = {
   a4: "A4",
 };
 
+const PAGE_HEIGHT_PX = {
+  letter: 1056,
+  a4: 1123,
+};
+
 function shade(hex, percent) {
   const num = parseInt(hex.slice(1), 16);
   const amt = Math.round(2.55 * percent);
@@ -102,6 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   document.getElementById("generateBtn").addEventListener("click", () => window.print());
+  document.getElementById("downloadDocxBtn").addEventListener("click", downloadDocx);
   document.getElementById("clearBtn").addEventListener("click", clearAll);
 
   // seed one blank row per repeatable section so the form doesn't look empty
@@ -478,6 +484,19 @@ function renderPreview() {
   }
 
   page.innerHTML = html;
+  requestAnimationFrame(updatePageCount);
+}
+
+function updatePageCount() {
+  const page = document.getElementById("resumePreview");
+  const label = document.getElementById("pageCountLabel");
+  if (!page || !label) return;
+  const pageHeight = PAGE_HEIGHT_PX[state.pageSize] || PAGE_HEIGHT_PX.letter;
+  const pages = Math.max(1, Math.ceil(page.scrollHeight / pageHeight));
+  label.textContent =
+    pages > 1
+      ? `${pages} pages — content overflows onto page ${pages} automatically`
+      : "1 page";
 }
 
 function renderSkills(skills) {
@@ -495,4 +514,244 @@ function section(title, innerHtml) {
       ${innerHtml}
     </div>
   `;
+}
+
+/* ---------------- DOCX EXPORT ---------------- */
+
+const DOCX_FONTS = {
+  arial: "Arial",
+  calibri: "Calibri",
+  helvetica: "Helvetica",
+  times: "Times New Roman",
+  georgia: "Georgia",
+  garamond: "EB Garamond",
+  verdana: "Verdana",
+};
+
+const DOCX_PAGE_SIZE = {
+  letter: { width: 12240, height: 15840 },
+  a4: { width: 11906, height: 16838 },
+};
+
+const DOCX_MARGIN = 720; // 0.5in
+
+function getDocxFont() {
+  if (state.font !== "default" && DOCX_FONTS[state.font]) return DOCX_FONTS[state.font];
+  return state.template === "harvard" ? "Times New Roman" : "Calibri";
+}
+
+function docxAccentColor() {
+  return (state.color || "#000000").replace("#", "").toUpperCase();
+}
+
+async function dataUrlToImage(dataUrl) {
+  const match = /^data:image\/(png|jpe?g|gif|bmp);base64,/.exec(dataUrl || "");
+  if (!match) return null;
+  const type = match[1] === "jpeg" ? "jpg" : match[1];
+  const res = await fetch(dataUrl);
+  const buf = await res.arrayBuffer();
+  return { data: new Uint8Array(buf), type };
+}
+
+function docxLines(text) {
+  return (text || "").split("\n").map((l) => l.trim()).filter(Boolean);
+}
+
+function docxHeading(text) {
+  const { Paragraph, TextRun, BorderStyle } = docx;
+  return new Paragraph({
+    spacing: { before: 240, after: 80 },
+    keepNext: true,
+    border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: docxAccentColor(), space: 2 } },
+    children: [
+      new TextRun({ text: text.toUpperCase(), bold: true, size: 22, color: docxAccentColor(), font: getDocxFont() }),
+    ],
+  });
+}
+
+function docxTitleDateRow(title, date, tabPos) {
+  const { Paragraph, TextRun, TabStopType } = docx;
+  return new Paragraph({
+    tabStops: [{ type: TabStopType.RIGHT, position: tabPos }],
+    spacing: { after: 20 },
+    keepNext: true,
+    keepLines: true,
+    children: [
+      new TextRun({ text: title || "", bold: true, size: 21, font: getDocxFont() }),
+      new TextRun({ text: date ? `\t${date}` : "", size: 20, font: getDocxFont() }),
+    ],
+  });
+}
+
+function docxSubLine(text) {
+  const { Paragraph, TextRun } = docx;
+  if (!text) return null;
+  return new Paragraph({
+    spacing: { after: 20 },
+    children: [new TextRun({ text, italics: true, size: 20, color: "555555", font: getDocxFont() })],
+  });
+}
+
+function docxBullets(text) {
+  const { Paragraph, TextRun } = docx;
+  return docxLines(text).map(
+    (line) =>
+      new Paragraph({
+        bullet: { level: 0 },
+        spacing: { after: 20 },
+        children: [new TextRun({ text: line, size: 20, font: getDocxFont() })],
+      })
+  );
+}
+
+async function downloadDocx() {
+  const { Document, Packer, Paragraph, TextRun, AlignmentType, ImageRun } = docx;
+  const font = getDocxFont();
+  const accent = docxAccentColor();
+  const page = DOCX_PAGE_SIZE[state.pageSize] || DOCX_PAGE_SIZE.letter;
+  const tabPos = page.width - DOCX_MARGIN * 2;
+
+  const c = state.contact;
+  const contactBits = [c.email, c.phone, c.location, c.linkedin, c.website].filter(Boolean);
+
+  const children = [];
+
+  const nameRun = new TextRun({ text: c.name || "Your Name", bold: true, size: 40, color: accent, font });
+  const headerChildren = [nameRun];
+
+  if (c.photo) {
+    const img = await dataUrlToImage(c.photo);
+    if (img) {
+      children.push(
+        new Paragraph({
+          alignment: AlignmentType.RIGHT,
+          children: [new ImageRun({ data: img.data, type: img.type, transformation: { width: 80, height: 80 } })],
+        })
+      );
+    }
+  }
+
+  children.push(new Paragraph({ children: headerChildren, spacing: { after: 40 } }));
+
+  if (c.title) {
+    children.push(
+      new Paragraph({
+        spacing: { after: 40 },
+        children: [new TextRun({ text: c.title, size: 24, color: "444444", font })],
+      })
+    );
+  }
+
+  if (contactBits.length) {
+    children.push(
+      new Paragraph({
+        spacing: { after: 160 },
+        children: [new TextRun({ text: contactBits.join("   |   "), size: 18, color: "555555", font })],
+      })
+    );
+  }
+
+  if (state.summary) {
+    children.push(docxHeading("Summary"));
+    children.push(new Paragraph({ spacing: { after: 120 }, children: [new TextRun({ text: state.summary, size: 20, font })] }));
+  }
+
+  if (state.education.length) {
+    children.push(docxHeading("Education"));
+    state.education.forEach((e) => {
+      const title = e.school + (e.location ? `  —  ${e.location}` : "");
+      const date = [e.start, e.end].filter(Boolean).join(" – ");
+      children.push(docxTitleDateRow(title, date, tabPos));
+      const sub = docxSubLine(e.degree);
+      if (sub) children.push(sub);
+      children.push(...docxBullets(e.detail));
+    });
+  }
+
+  if (state.experience.length) {
+    children.push(docxHeading("Experience"));
+    state.experience.forEach((e) => {
+      const title = e.role + (e.company ? `  —  ${e.company}` : "");
+      const date = [e.start, e.end].filter(Boolean).join(" – ");
+      children.push(docxTitleDateRow(title, date, tabPos));
+      const sub = docxSubLine(e.location);
+      if (sub) children.push(sub);
+      children.push(...docxBullets(e.bullets));
+    });
+  }
+
+  if (state.projects.length) {
+    children.push(docxHeading("Projects"));
+    state.projects.forEach((p) => {
+      children.push(docxTitleDateRow(p.name, p.link, tabPos));
+      const sub = docxSubLine(p.tech);
+      if (sub) children.push(sub);
+      children.push(...docxBullets(p.bullets));
+    });
+  }
+
+  const hasSkills =
+    state.skillsFormat === "sentence" ? state.skillsText.trim() : state.skills.some((s) => (s.category || "").trim() || (s.items || "").trim());
+  if (hasSkills) {
+    children.push(docxHeading("Skills"));
+    if (state.skillsFormat === "sentence") {
+      children.push(new Paragraph({ spacing: { after: 120 }, children: [new TextRun({ text: state.skillsText.trim(), size: 20, font })] }));
+    } else {
+      state.skills
+        .filter((s) => (s.category || "").trim() || (s.items || "").trim())
+        .forEach((s) => {
+          children.push(
+            new Paragraph({
+              spacing: { after: 40 },
+              children: [
+                new TextRun({ text: s.category ? `${s.category}: ` : "", bold: true, size: 20, font }),
+                new TextRun({ text: s.items || "", size: 20, font }),
+              ],
+            })
+          );
+        });
+    }
+  }
+
+  if (state.certifications.length) {
+    children.push(docxHeading("Certifications & Awards"));
+    state.certifications.forEach((c2) => {
+      const title = c2.name + (c2.issuer ? `  —  ${c2.issuer}` : "");
+      children.push(docxTitleDateRow(title, c2.date, tabPos));
+    });
+  }
+
+  if (state.activities.length) {
+    children.push(docxHeading("Activities & Leadership"));
+    state.activities.forEach((a) => {
+      const title = a.role + (a.org ? `  —  ${a.org}` : "");
+      children.push(docxTitleDateRow(title, a.date, tabPos));
+      children.push(...docxBullets(a.bullets));
+    });
+  }
+
+  const doc = new Document({
+    sections: [
+      {
+        properties: {
+          page: {
+            size: { width: page.width, height: page.height },
+            margin: { top: DOCX_MARGIN, bottom: DOCX_MARGIN, left: DOCX_MARGIN, right: DOCX_MARGIN },
+          },
+        },
+        children,
+      },
+    ],
+  });
+
+  const blob = await Packer.toBlob(doc);
+  const filename = `${(c.name || "Resume").trim().replace(/[^a-z0-9]+/gi, "_")}.docx`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

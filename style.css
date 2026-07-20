@@ -307,6 +307,15 @@ select { cursor: pointer; }
   color: var(--text-muted);
   font-size: 13px;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-count-label {
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 .resume-page-wrap {
@@ -322,8 +331,34 @@ select { cursor: pointer; }
   color: #1a1a1a;
 }
 
-.resume-page.size-letter { width: 816px; min-height: 1056px; }
-.resume-page.size-a4 { width: 794px; min-height: 1123px; }
+.resume-page.size-letter {
+  width: 816px;
+  min-height: 1056px;
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 1055px, rgba(0,0,0,0.28) 1055px, rgba(0,0,0,0.28) 1057px, transparent 1057px, transparent 1056px);
+  background-size: 100% 1056px;
+  background-repeat: repeat-y;
+}
+.resume-page.size-a4 {
+  width: 794px;
+  min-height: 1123px;
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 1122px, rgba(0,0,0,0.28) 1122px, rgba(0,0,0,0.28) 1124px, transparent 1124px, transparent 1123px);
+  background-size: 100% 1123px;
+  background-repeat: repeat-y;
+}
+
+/* Prevent entries / headings from splitting awkwardly across a page break, both
+   on screen (via the dashed guides above) and when printed to PDF. */
+.r-entry,
+.r-header,
+.r-summary,
+.r-skills-line {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+.r-section-title {
+  break-after: avoid;
+  page-break-after: avoid;
+}
 
 .empty-hint {
   color: #9ca3af;
@@ -422,6 +457,7 @@ select { cursor: pointer; }
     width: 100%;
     min-height: auto;
     padding: 0.5in 0.6in;
+    background-image: none;
   }
   @page { margin: 0; }
 }

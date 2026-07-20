@@ -173,7 +173,8 @@
     </section>
 
     <div class="actions">
-      <button type="button" id="generateBtn" class="btn-primary">Generate PDF</button>
+      <button type="button" id="generateBtn" class="btn-primary">Download PDF</button>
+      <button type="button" id="downloadDocxBtn" class="btn-primary">Download DOCX</button>
       <button type="button" id="clearBtn" class="btn-secondary">Clear All</button>
     </div>
   </div>
@@ -182,6 +183,7 @@
   <div class="panel preview-panel">
     <div class="preview-toolbar">
       <span id="templateLabel">Fresh Grad Template</span>
+      <span id="pageCountLabel" class="page-count-label"></span>
     </div>
     <div class="resume-page-wrap">
       <div id="resumePreview" class="resume-page tpl-freshgrad"></div>
@@ -190,6 +192,7 @@
 
 </div>
 
+<script src="https://unpkg.com/docx@8.5.0/build/index.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
