@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Resume Builder</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ================= FORM PANEL ================= -->
+  <div class="panel form-panel">
+    <header class="panel-header">
+      <h1>Resume Builder</h1>
+      <p class="subtitle">Fill in your info, pick a layout, generate your PDF.</p>
+    </header>
+
+    <section class="field-group">
+      <h2>Template</h2>
+      <div class="template-choices" id="templateChoices">
+        <label class="template-card">
+          <input type="radio" name="template" value="freshgrad" checked />
+          <span class="template-card-body">
+            <strong>Fresh Grad</strong>
+            <small>Modern, education-forward, great for new graduates</small>
+          </span>
+        </label>
+        <label class="template-card">
+          <input type="radio" name="template" value="intern" />
+          <span class="template-card-body">
+            <strong>Internship / OJT</strong>
+            <small>Objective-first layout for internship & OJT applications</small>
+          </span>
+        </label>
+        <label class="template-card">
+          <input type="radio" name="template" value="harvard" />
+          <span class="template-card-body">
+            <strong>Harvard</strong>
+            <small>Classic serif, minimal, the traditional Harvard OCS style</small>
+          </span>
+        </label>
+      </div>
+    </section>
+
+    <section class="field-group">
+      <h2>Appearance</h2>
+      <div class="grid-2">
+        <div class="field">
+          <label>Font</label>
+          <select id="a_font">
+            <option value="default">Default (matches template)</option>
+            <option value="arial">Arial (Sans-serif)</option>
+            <option value="calibri">Calibri (Sans-serif)</option>
+            <option value="helvetica">Helvetica (Sans-serif)</option>
+            <option value="times">Times New Roman (Serif)</option>
+            <option value="georgia">Georgia (Serif)</option>
+            <option value="garamond">Garamond (Serif)</option>
+            <option value="verdana">Verdana (Sans-serif)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Page Size</label>
+          <select id="a_pagesize">
+            <option value="letter">Letter (8.5" x 11")</option>
+            <option value="a4">A4 (210mm x 297mm)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Accent Color</label>
+          <div class="color-field">
+            <input type="color" id="a_color" value="#000000" />
+            <span id="a_colorHex" class="color-hex">#000000</span>
+          </div>
+        </div>
+      </div>
+      <p class="appearance-note">Note: the Harvard template stays black &amp; white by design (traditional style) and does not use the accent color.</p>
+    </section>
+
+    <section class="field-group">
+      <h2>Contact Information</h2>
+
+      <div class="photo-field">
+        <div class="photo-thumb" id="photoThumb">
+          <span id="photoPlaceholder">No Photo</span>
+          <img id="photoPreview" alt="Profile photo" style="display:none" />
+        </div>
+        <div class="photo-actions">
+          <label class="btn-add photo-upload-btn">
+            Upload Picture
+            <input type="file" id="c_photo" accept="image/*" hidden />
+          </label>
+          <button type="button" id="removePhotoBtn" class="btn-secondary photo-remove-btn" style="display:none">Remove</button>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field"><label>Full Name</label><input id="c_name" placeholder="Juan Dela Cruz" /></div>
+        <div class="field"><label>Title / Target Role</label><input id="c_title" placeholder="Computer Science Graduate" /></div>
+        <div class="field"><label>Email</label><input id="c_email" type="email" placeholder="juan@email.com" /></div>
+        <div class="field"><label>Phone</label><input id="c_phone" placeholder="+63 912 345 6789" /></div>
+        <div class="field"><label>Location</label><input id="c_location" placeholder="Manila, Philippines" /></div>
+        <div class="field"><label>LinkedIn</label><input id="c_linkedin" placeholder="linkedin.com/in/juandelacruz" /></div>
+        <div class="field"><label>GitHub / Portfolio</label><input id="c_website" placeholder="github.com/juandelacruz" /></div>
+      </div>
+    </section>
+
+    <section class="field-group">
+      <h2>Summary / Objective</h2>
+      <div class="field">
+        <textarea id="c_summary" rows="3" placeholder="A short 2-3 sentence summary of who you are and what you're looking for."></textarea>
+      </div>
+    </section>
+
+    <section class="field-group">
+      <div class="field-group-header">
+        <h2>Education</h2>
+        <button type="button" class="btn-add" data-add="education">+ Add</button>
+      </div>
+      <div id="educationList" class="repeat-list"></div>
+    </section>
+
+    <section class="field-group">
+      <div class="field-group-header">
+        <h2>Experience</h2>
+        <button type="button" class="btn-add" data-add="experience">+ Add</button>
+      </div>
+      <div id="experienceList" class="repeat-list"></div>
+    </section>
+
+    <section class="field-group">
+      <div class="field-group-header">
+        <h2>Projects</h2>
+        <button type="button" class="btn-add" data-add="projects">+ Add</button>
+      </div>
+      <div id="projectsList" class="repeat-list"></div>
+    </section>
+
+    <section class="field-group">
+      <div class="field-group-header">
+        <h2>Skills</h2>
+        <button type="button" class="btn-add" data-add="skills" id="skillsAddBtn" style="display:none">+ Add</button>
+      </div>
+      <div class="format-toggle" id="skillsFormatToggle">
+        <label><input type="radio" name="skillsFormat" value="sentence" checked /> Sentence form</label>
+        <label><input type="radio" name="skillsFormat" value="list" /> List form</label>
+      </div>
+
+      <div id="skillsSentenceWrap" class="field bullets-field">
+        <label>Skills (sentence form)</label>
+        <textarea id="skillsSentence" rows="3" placeholder="Proficient in JavaScript, Python, and SQL, with hands-on experience in React, Node.js, and Git."></textarea>
+        <div class="bullets-hint">Tip: write your skills as a full sentence, not a comma list.</div>
+      </div>
+
+      <div id="skillsList" class="repeat-list" style="display:none"></div>
+    </section>
+
+    <section class="field-group">
+      <div class="field-group-header">
+        <h2>Certifications / Awards</h2>
+        <button type="button" class="btn-add" data-add="certifications">+ Add</button>
+      </div>
+      <div id="certificationsList" class="repeat-list"></div>
+    </section>
+
+    <section class="field-group">
+      <div class="field-group-header">
+        <h2>Activities / Leadership</h2>
+        <button type="button" class="btn-add" data-add="activities">+ Add</button>
+      </div>
+      <div id="activitiesList" class="repeat-list"></div>
+    </section>
+
+    <div class="actions">
+      <button type="button" id="generateBtn" class="btn-primary">Generate PDF</button>
+      <button type="button" id="clearBtn" class="btn-secondary">Clear All</button>
+    </div>
+  </div>
+
+  <!-- ================= PREVIEW PANEL ================= -->
+  <div class="panel preview-panel">
+    <div class="preview-toolbar">
+      <span id="templateLabel">Fresh Grad Template</span>
+    </div>
+    <div class="resume-page-wrap">
+      <div id="resumePreview" class="resume-page tpl-freshgrad"></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
